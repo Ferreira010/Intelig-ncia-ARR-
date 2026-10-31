@@ -4,6 +4,11 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Inteligência ARR — Atendimento no WhatsApp que parece gente</title>
 <meta name="description" content="Atendente de WhatsApp com IA que conversa como uma pessoa, consulta seu estoque e rastreia pedidos na transportadora.">
+<meta property="og:title" content="Inteligência ARR — Atendimento no WhatsApp que parece gente">
+<meta property="og:description" content="Atendente com IA que conversa de forma natural, consulta seu estoque e rastreia pedidos na transportadora. 24h por dia.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f8a5f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f8a5f'/%3E%3Ctext x='16' y='21' font-family='Arial' font-weight='700' font-size='13' fill='white' text-anchor='middle'%3EAR%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -20,6 +25,7 @@
       <p class="lead">Uma atendente com IA que conversa de forma natural, consulta seu estoque em tempo real, rastreia pedidos na transportadora, calcula frete e passa para um humano quando precisa.</p>
       <a class="btn" href="/entrar.html?cadastro=1">Criar minha atendente</a>
       <a class="btn ghost" href="#planos">Ver planos</a>
+      <p class="hint" style="margin-top:14px">Teste a conversa grátis antes de assinar. Sem fidelidade.</p>
     </div>
     <div class="phone" aria-label="Exemplo de conversa">
       <div class="msg in">oi, vcs tem o tênis runner azul no 42?</div>
@@ -55,13 +61,46 @@
     </div>
   </section>
 
+  <section>
+    <h2>Robô de menu x Inteligência ARR</h2>
+    <p class="sub">A diferença que o seu cliente sente na primeira mensagem.</p>
+    <div class="compare card" style="padding:0">
+      <div class="crow head"><div></div><div>Robô de menu comum</div><div>Inteligência ARR</div></div>
+      <div class="crow"><div>Como o cliente conversa</div><div>"Digite 1 para pedidos"</div><div>Escreve do jeito dele, como com uma pessoa</div></div>
+      <div class="crow"><div>Várias mensagens seguidas</div><div>Responde cada uma separada</div><div>Espera o cliente terminar e responde tudo junto</div></div>
+      <div class="crow"><div>Estoque e preço</div><div>Texto fixo, desatualizado</div><div>Consulta o seu sistema na hora</div></div>
+      <div class="crow"><div>"Cadê meu pedido?"</div><div>Manda o link da transportadora</div><div>Rastreia e explica onde está</div></div>
+      <div class="crow"><div>Foto do produto ou comprovante</div><div>Não entende</div><div>Vê a foto e responde sobre ela</div></div>
+      <div class="crow"><div>Cliente irritado</div><div>Repete o menu</div><div>Acalma e chama alguém da equipe</div></div>
+    </div>
+  </section>
+
   <section id="planos">
     <h2>Planos</h2>
     <p class="sub">Sem fidelidade. Cancele quando quiser.</p>
     <div class="grid" id="plans"></div>
   </section>
+  <section id="duvidas">
+    <h2>Perguntas frequentes</h2>
+    <p class="sub">Ainda com dúvida? A gente responde.</p>
+    <div class="faq">
+      <details class="card"><summary>Preciso saber programar?</summary><p>Não. Você preenche o painel com as informações da loja, como faria ao treinar um funcionário novo. Para conectar o estoque e a transportadora, basta colar a URL e o token que o seu sistema fornece, e tem um botão para testar na hora.</p></details>
+      <details class="card"><summary>Funciona com o meu número de WhatsApp atual?</summary><p>Funciona com a API oficial do WhatsApp Business (Meta). Você pode migrar o seu número atual ou usar um número novo. O painel mostra o passo a passo.</p></details>
+      <details class="card"><summary>E se a atendente não souber responder?</summary><p>Ela nunca inventa preço, prazo ou estoque. Quando não sabe ou o cliente pede, ela transfere para a sua equipe, que responde pelo próprio painel. Depois é só devolver a conversa para ela.</p></details>
+      <details class="card"><summary>O cliente vai saber que é uma IA?</summary><p>A conversa é natural, sem cara de robô, e ela não fica se anunciando como IA. Mas, se o cliente perguntar a sério, ela responde com honestidade e oferece chamar uma pessoa. É assim que a confiança se mantém.</p></details>
+      <details class="card"><summary>Quais sistemas de estoque e transportadoras funcionam?</summary><p>Qualquer um que tenha API: Bling, Tiny, Nuvemshop, WooCommerce, Shopify, ERPs próprios, Melhor Envio, Correios, Jadlog, Frenet e outros. Sem API? Coloque os produtos e preços direto no painel.</p></details>
+      <details class="card"><summary>O que conta como uma conversa?</summary><p>Cada atendimento com um cliente conta como uma conversa, não importa quantas mensagens tenha. Se o mesmo cliente voltar no dia seguinte, conta como uma nova.</p></details>
+      <details class="card"><summary>Tem fidelidade?</summary><p>Não. O plano vale por 30 dias e você renova quando quiser.</p></details>
+    </div>
+  </section>
+
+  <section class="cta card">
+    <h2>Coloque sua atendente no ar hoje</h2>
+    <p class="sub" style="margin-bottom:20px">Crie a conta, configure e teste a conversa antes de pagar.</p>
+    <a class="btn" href="/entrar.html?cadastro=1">Criar minha atendente</a>
+  </section>
 </main>
-<footer><div class="wrap">© Inteligência ARR · Atendimento inteligente para WhatsApp</div></footer>
+<footer><div class="wrap" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>© Inteligência ARR · Atendimento inteligente para WhatsApp</span><span><a href="/termos.html">Termos de Uso</a> · <a href="/privacidade.html">Privacidade</a></span></div></footer>
 <script>
 fetch("/api/planos").then(r=>r.json()).then(({plans})=>{
   const el=document.getElementById("plans");

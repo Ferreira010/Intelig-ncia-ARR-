@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS customer_notes (
   notes TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (bot_id, customer_phone)
 );
+-- IDs de mensagens já recebidas (a Meta reenvia webhooks; evita responder duas vezes)
+CREATE TABLE IF NOT EXISTS processed_messages (
+  id TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -152,6 +157,34 @@ const notes = {
   },
 };
 
+// Retorna true só na primeira vez que vê o ID
+function markProcessed(id) {
+  const r = db.prepare("INSERT OR IGNORE INTO processed_messages (id) VALUES (?)").run(id);
+  if (Math.random() < 0.01) db.prepare("DELETE FROM processed_messages WHERE created_at < unixepoch() - 7 * 86400").run();
+  return r.changes > 0;
+}
+
+function monthStart() {
+  const d = new Date();
+  return Math.floor(new Date(d.getFullYear(), d.getMonth(), 1).getTime() / 1000);
+}
+
+const stats = {
+  // Uma "conversa" = uma sessão de atendimento iniciada no mês
+  conversationsThisMonth: (botId) => db.prepare("SELECT COUNT(*) AS n FROM conversations WHERE bot_id = ? AND created_at >= ?").get(botId, monthStart()).n,
+  summary(botId) {
+    const since = monthStart();
+    const row = db.prepare(`SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS mes,
+        SUM(CASE WHEN status = 'humano' THEN 1 ELSE 0 END) AS aguardando_humano,
+        SUM(CASE WHEN last_activity >= unixepoch() - 86400 THEN 1 ELSE 0 END) AS ultimas_24h,
+        COUNT(DISTINCT customer_phone) AS clientes
+      FROM conversations WHERE bot_id = ?`).get(since, botId);
+    return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, Number(v || 0)]));
+  },
+};
+
 const payments = {
   upsert(id, userId, plan, status) {
     db.prepare("INSERT INTO payments (id, user_id, plan, status) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status").run(id, userId, plan, status);
@@ -159,4 +192,4 @@ const payments = {
   byId: (id) => db.prepare("SELECT * FROM payments WHERE id = ?").get(id),
 };
 
-module.exports = { db, users, bots, conversations, notes, payments };
+module.exports = { db, users, bots, conversations, notes, payments, stats, markProcessed };

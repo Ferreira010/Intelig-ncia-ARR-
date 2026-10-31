@@ -94,7 +94,7 @@ function nowBR() {
  * Processa as mensagens novas do cliente e devolve as bolhas de resposta.
  * history: histórico da sessão (formato Messages API). Só cresce — nunca editamos turnos antigos.
  */
-async function reply({ bot, history, customerTexts, customerName, phone, extraContext }) {
+async function reply({ bot, history, customerTexts, customerName, phone, extraContext, attachments = [] }) {
   const { tools, enabled } = buildTools(bot.secrets);
   const system = buildSystemPrompt(bot.settings, enabled);
 
@@ -105,7 +105,14 @@ async function reply({ bot, history, customerTexts, customerName, phone, extraCo
     header += `\n[Contexto interno — não mencione: cliente ${customerName ? `se chama "${customerName}" no WhatsApp` : "sem nome no perfil"}.${memoria ? `\nO que já sabemos deste cliente de conversas anteriores:\n${memoria}` : " Primeira conversa com este cliente."}]`;
   }
   if (extraContext) header += `\n[Contexto interno — não mencione: ${extraContext}]`;
-  const messages = [...history, { role: "user", content: `${header}\n${customerTexts.join("\n")}` }];
+  const text = `${header}\n${customerTexts.join("\n")}`;
+  // Fotos e PDFs enviados pelo cliente entram como blocos que o Claude consegue ler
+  const blocks = attachments.map((a) =>
+    a.mimeType === "application/pdf"
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data } }
+      : { type: "image", source: { type: "base64", media_type: a.mimeType, data: a.data } }
+  );
+  const messages = [...history, { role: "user", content: blocks.length ? [...blocks, { type: "text", text }] : text }];
 
   const ctx = { secrets: bot.secrets, botId: bot.id, phone, handoff: null };
   let finalText = "";

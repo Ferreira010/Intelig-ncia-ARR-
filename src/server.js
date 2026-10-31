@@ -2,7 +2,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const express = require("express");
 const config = require("./config");
-const { users, bots, conversations, payments } = require("./db");
+const { users, bots, conversations, payments, stats, markProcessed } = require("./db");
 const { hashPassword, verifyPassword, setSession, clearSession, requireAuth } = require("./auth");
 const { callIntegration } = require("./integrations/http");
 const { reply, INTEGRATION_TOOLS } = require("./ai/agent");
@@ -31,8 +31,10 @@ function rateLimit(max, windowMs) {
 
 // ---------------- conta ----------------
 app.post("/api/cadastro", rateLimit(10, 15 * 60e3), (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, aceite } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: "Preencha nome, e-mail e senha." });
+  if (!aceite) return res.status(400).json({ error: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade." });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) return res.status(400).json({ error: "E-mail inválido." });
   if (String(password).length < 8) return res.status(400).json({ error: "A senha precisa ter pelo menos 8 caracteres." });
   const em = String(email).trim().toLowerCase();
   if (users.byEmail(em)) return res.status(409).json({ error: "Este e-mail já tem conta. Faça login." });
@@ -65,18 +67,19 @@ app.post("/api/assinar", requireAuth, wrap(async (req, res) => {
   res.json({ checkoutUrl: await mp.createCheckout(req.user, plan) });
 }));
 
-app.post("/api/pagamentos/webhook", wrap(async (req, res) => {
+app.post("/api/pagamentos/webhook", async (req, res) => {
   res.sendStatus(200); // responde rápido; o processamento segue
   const id = req.body?.data?.id || req.query["data.id"] || req.query.id;
   const type = req.body?.type || req.query.type || req.query.topic;
-  if (!id || (type && type !== "payment")) return;
-  const pay = await mp.getPayment(id);
+  if (!id || (type && type !== "payment") || !config.mercadoPagoToken) return;
+  let pay;
+  try { pay = await mp.getPayment(id); } catch (e) { return console.error("[pagamento] erro ao consultar:", e.message); }
   const [userId, plan] = String(pay.external_reference || "").split(":");
   if (!users.byId(Number(userId)) || !config.plans[plan]) return;
   const before = payments.byId(String(pay.id));
   payments.upsert(String(pay.id), Number(userId), plan, pay.status);
   if (pay.status === "approved" && before?.status !== "approved") users.activatePlan(Number(userId), plan, 30);
-}));
+});
 
 // ---------------- configuração do bot ----------------
 const mask = (v) => (v ? "••••" + String(v).slice(-4) : "");
@@ -140,8 +143,30 @@ app.post("/api/bot/simular", requireAuth, wrap(async (req, res) => {
   const bot = bots.byUser(req.user.id);
   const r = await reply({ bot, history: sim.history, customerTexts: [String(texto)], customerName: "Cliente Teste", phone: null });
   sim.history = r.messages;
+  if (!bot.settings._testado) bots.save(bot.id, { ...bot.settings, _testado: true }, bot.secrets);
   res.json({ bubbles: r.bubbles, handoff: r.handoff, toolCalls: r.messages.flatMap((m) => (Array.isArray(m.content) ? m.content : [])).filter((b) => b.type === "tool_use").length });
 }));
+
+// ---------------- resumo do painel ----------------
+app.get("/api/resumo", requireAuth, (req, res) => {
+  const bot = bots.byUser(req.user.id);
+  const st = bot.settings, sec = bot.secrets;
+  const plan = config.plans[req.user.plan];
+  res.json({
+    stats: stats.summary(bot.id),
+    limite: users.isActive(req.user) && plan ? plan.conversations : 0,
+    diasRestantes: users.isActive(req.user) ? Math.ceil((req.user.plan_active_until - Date.now() / 1000) / 86400) : 0,
+    checklist: {
+      plano: users.isActive(req.user),
+      negocio: !!(st.negocio?.nome && (st.negocio?.descricao || st.catalogo)),
+      atendente: !!(st.persona?.nome || st.dicas),
+      integracao: Object.values(sec.integrations || {}).some((i) => i.enabled && i.url),
+      testou: !!st._testado,
+      whatsapp: !!(sec.whatsappPhoneId && sec.whatsappToken),
+    },
+    pausado: !!st.pausado,
+  });
+});
 
 // ---------------- conversas (caixa de entrada) ----------------
 function ownConversation(req) {
@@ -167,6 +192,7 @@ app.get("/api/conversas/:id", requireAuth, (req, res) => {
       }
       else if (b.type === "text") lines.push({ from: "bot", text: b.text.replace(/\s*\|\|\|\s*/g, "\n") });
       else if (b.type === "tool_use") lines.push({ from: "sistema", text: `consultou ${b.name}: ${JSON.stringify(b.input)}` });
+      else if (b.type === "image" || b.type === "document") lines.push({ from: "sistema", text: b.type === "image" ? "📷 cliente enviou uma foto (a atendente viu)" : "📄 cliente enviou um PDF (a atendente leu)" });
     }
   }
   if (own.conv.human_log) for (const l of own.conv.human_log.trim().split("\n")) lines.push({ from: l.startsWith("Cliente:") ? "cliente" : "humano", text: l.replace(/^(Cliente|Atendente): /, "") });
@@ -211,6 +237,7 @@ app.post("/webhook/whatsapp/:botId", (req, res) => {
   res.sendStatus(200);
   for (const msg of wa.parseWebhook(req.body)) {
     if (msg.phoneNumberId && bot.secrets.whatsappPhoneId && msg.phoneNumberId !== bot.secrets.whatsappPhoneId) continue;
+    if (!markProcessed(`${bot.id}:${msg.id}`)) continue; // reenvio da Meta: já respondido
     enqueue(bot.id, msg);
   }
 });

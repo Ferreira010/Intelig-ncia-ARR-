@@ -33,13 +33,36 @@ function parseWebhook(body) {
         else if (m.type === "button") text = m.button.text;
         else if (m.type === "interactive") text = m.interactive.button_reply?.title || m.interactive.list_reply?.title;
         else if (m.type === "location") text = `[Cliente enviou localização: ${m.location.latitude},${m.location.longitude} ${m.location.address || ""}]`;
-        else if (["image", "audio", "video", "document", "sticker"].includes(m.type))
-          text = `[Cliente enviou ${({ image: "uma imagem", audio: "um áudio", video: "um vídeo", document: "um documento", sticker: "uma figurinha" })[m.type]}${m[m.type]?.caption ? ` com a legenda: "${m[m.type].caption}"` : ""}]`;
-        if (text) out.push({ from: m.from, id: m.id, name: names[m.from], text, phoneNumberId: v.metadata?.phone_number_id });
+        let media = null;
+        if (["image", "audio", "video", "document", "sticker"].includes(m.type)) {
+          const obj = m[m.type] || {};
+          const label = ({ image: "uma imagem", audio: "um áudio", video: "um vídeo", document: "um documento", sticker: "uma figurinha" })[m.type];
+          text = `[Cliente enviou ${label}${obj.filename ? ` (${obj.filename})` : ""}${obj.caption ? ` com a legenda: "${obj.caption}"` : ""}]`;
+          // Imagens e PDFs a IA consegue ler
+          if ((m.type === "image" && /^image\/(jpeg|png|webp|gif)$/.test(obj.mime_type || "")) || (m.type === "document" && obj.mime_type === "application/pdf")) {
+            media = { id: obj.id, mimeType: obj.mime_type };
+          }
+        }
+        if (text) out.push({ from: m.from, id: m.id, name: names[m.from], text, media, phoneNumberId: v.metadata?.phone_number_id });
       }
     }
   }
   return out;
 }
 
-module.exports = { sendText, markReadAndTyping, parseWebhook };
+// Baixa uma mídia recebida (imagem/PDF) e devolve em base64. Limite de 5 MB.
+const MAX_MEDIA = 5 * 1024 * 1024;
+async function downloadMedia(secrets, mediaId) {
+  const auth = { Authorization: `Bearer ${secrets.whatsappToken}` };
+  const meta = await fetch(`${GRAPH}/${encodeURIComponent(mediaId)}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+  if (!meta.ok) throw new Error(`mídia ${meta.status}`);
+  const { url, file_size, mime_type } = await meta.json();
+  if (file_size > MAX_MEDIA) throw new Error("arquivo grande demais");
+  const file = await fetch(url, { headers: auth, signal: AbortSignal.timeout(30000) });
+  if (!file.ok) throw new Error(`download ${file.status}`);
+  const buf = Buffer.from(await file.arrayBuffer());
+  if (buf.length > MAX_MEDIA) throw new Error("arquivo grande demais");
+  return { mimeType: mime_type, data: buf.toString("base64") };
+}
+
+module.exports = { sendText, markReadAndTyping, parseWebhook, downloadMedia };

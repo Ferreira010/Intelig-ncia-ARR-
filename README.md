@@ -6,25 +6,33 @@ Os lojistas assinam pelo site, informam o que vendem, dão dicas para a atendent
 ## O que tem
 
 **Site e painel (`public/`)**
-- Página de vendas com os planos
+- Página de vendas com comparação "robô de menu x IA", planos, perguntas frequentes e chamada final
+- Termos de Uso e Política de Privacidade (LGPD), com aceite obrigatório no cadastro. São modelos: revise com um advogado e preencha os dados da empresa
 - Cadastro e login
 - Assinatura pelo Mercado Pago (Pix, cartão, boleto), ou modo de teste sem cobrança
 - Painel do lojista:
+  - **Início**: números do mês, uso do plano, passo a passo de configuração e alertas (plano vencendo, limite atingido, clientes esperando a equipe)
   - **Meu negócio**: descrição, produtos e preços, políticas, perguntas frequentes
   - **Atendente e dicas**: nome, jeito de falar, uso de emojis, regras e argumentos de venda
   - **Integrações (APIs)**: estoque, rastreio, frete e pedidos, com botão "Testar API"
   - **WhatsApp**: passo a passo e credenciais da API oficial da Meta
   - **Testar conversa**: simulador para conversar com a atendente antes de ligar no WhatsApp
-  - **Conversas**: acompanhe tudo, assuma a conversa como humano e depois devolva para a IA
+  - **Conversas**: acompanhe tudo, assuma a conversa como humano e depois devolva para a IA. Atualiza sozinha, mostra um contador no menu e avisa pelo navegador quando um cliente precisa da equipe
 
 **O que faz a conversa parecer humana (`src/ai`, `src/whatsapp`)**
 - Espera o cliente terminar de mandar várias mensagens seguidas e responde tudo junto
 - Marca como lida e mostra "digitando…" por um tempo proporcional ao tamanho do texto
 - Responde em mensagens curtas e separadas, no tom da marca, sem frases de robô
 - Consulta estoque, frete e rastreio de verdade antes de responder: não inventa preço nem prazo
+- Vê fotos e lê PDFs que o cliente manda (foto de produto, comprovante, nota fiscal). Não confirma pagamento sozinha: a equipe confere
 - Lembra do cliente entre conversas (nome, tamanho, pedido em andamento)
 - Passa para um humano em caso de reclamação, irritação ou pedido do cliente
 - Se o cliente perguntar a sério se está falando com um robô, ela diz a verdade. Isso preserva a confiança e evita problemas com as regras do WhatsApp
+
+**Confiabilidade**
+- Mensagens reenviadas pela Meta não geram resposta duplicada
+- Se a IA falhar, tenta de novo. Se falhar outra vez, avisa o cliente ("só um instante") e passa a conversa para a equipe
+- Limite de conversas por plano: acima da cota, as conversas novas vão para a equipe
 
 A IA usa o **Claude** (Anthropic), modelo `claude-opus-5-5`, com prompt caching e fallback automático.
 
@@ -72,7 +80,8 @@ public/                  site e painel (HTML/CSS/JS puro)
 ```
 
 ## Próximos passos sugeridos
-- Transcrever áudios (muito comuns no WhatsApp) e ler imagens de produto ou comprovante
+- Transcrever áudios (muito comuns no WhatsApp). Precisa de um serviço de transcrição à parte
+- Recuperação de senha por e-mail
 - Cobrança recorrente automática (assinatura do Mercado Pago) e limite de conversas por plano
 - Fila persistente (ex.: Redis) para rodar em mais de um servidor
 - Conectores prontos para Bling, Tiny, Nuvemshop e Melhor Envio, sem precisar montar a URL

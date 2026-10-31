@@ -13,18 +13,35 @@
 
 <div class="wrap layout">
   <nav class="side" id="nav">
-    <button data-tab="assinatura" class="active">Assinatura</button>
+    <button data-tab="inicio" class="active">Início</button>
+    <button data-tab="assinatura">Assinatura</button>
     <button data-tab="negocio">Meu negócio</button>
     <button data-tab="atendente">Atendente e dicas</button>
     <button data-tab="integracoes">Integrações (APIs)</button>
     <button data-tab="whatsapp">WhatsApp</button>
     <button data-tab="testar">Testar conversa</button>
-    <button data-tab="conversas">Conversas</button>
+    <button data-tab="conversas">Conversas <span class="count" id="pendingBadge" hidden></span></button>
   </nav>
 
   <main>
+    <!-- INÍCIO -->
+    <div class="panel active" id="inicio">
+      <h2 id="hello">Olá!</h2>
+      <p class="sub">Acompanhe sua atendente e veja o que falta para ela ficar perfeita.</p>
+      <div class="alert" id="alertBox" hidden></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="card" id="usageCard" hidden>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>Conversas do plano este mês</strong><span id="usageText" class="hint" style="margin:0"></span></div>
+        <div class="bar"><span id="usageBar"></span></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <strong>Primeiros passos</strong> <span class="hint" id="stepsCount"></span>
+        <ol class="steps" id="steps"></ol>
+      </div>
+    </div>
+
     <!-- ASSINATURA -->
-    <div class="panel active" id="assinatura">
+    <div class="panel" id="assinatura">
       <h2>Assinatura</h2>
       <p class="sub" id="planInfo"></p>
       <div class="grid" id="plans"></div>
@@ -146,12 +163,59 @@ const INTEGS={
 
 let state=null;
 // ---- abas ----
-document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("active",x===b));
-  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.tab));
-  $("savebar").hidden=!["negocio","atendente","integracoes","whatsapp"].includes(b.dataset.tab);
-  if(b.dataset.tab==="conversas")loadConvs();
-});
+function go(tab){
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===tab));
+  $("savebar").hidden=!["negocio","atendente","integracoes","whatsapp"].includes(tab);
+  if(tab==="conversas")loadConvs();
+  if(tab==="inicio")loadResumo();
+  history.replaceState(null,"","#"+tab);
+  window.scrollTo({top:0});
+}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+
+// ---- início ----
+const STEPS=[
+  ["plano","Assinar um plano","assinatura"],
+  ["negocio","Contar sobre o negócio e o que você vende","negocio"],
+  ["atendente","Dar nome e dicas para a atendente","atendente"],
+  ["integracao","Conectar estoque ou transportadora (opcional, recomendado)","integracoes"],
+  ["testou","Fazer uma conversa de teste","testar"],
+  ["whatsapp","Conectar o WhatsApp","whatsapp"],
+];
+let lastPending=null;
+async function loadResumo(){
+  const r=await api("/api/resumo");const s=r.stats;
+  $("kpis").innerHTML=[["Conversas no mês",s.mes],["Últimas 24h",s.ultimas_24h],["Clientes atendidos",s.clientes],["Esperando humano",s.aguardando_humano]]
+    .map(([l,v],i)=>`<div class="card kpi ${i===3&&v?"warn":""}"><div class="hint">${l}</div><div class="num">${v}</div></div>`).join("");
+  $("usageCard").hidden=!r.limite;
+  if(r.limite){const pct=Math.min(100,Math.round(s.mes/r.limite*100));$("usageBar").style.width=pct+"%";$("usageBar").className=pct>=90?"hot":"";$("usageText").textContent=`${s.mes} de ${r.limite} (${pct}%)`;}
+  const done=STEPS.filter(([k])=>r.checklist[k]).length;
+  $("stepsCount").textContent=`${done} de ${STEPS.length} concluídos`;
+  $("steps").innerHTML=STEPS.map(([k,l,tab])=>`<li class="${r.checklist[k]?"done":""}"><span>${r.checklist[k]?"✓":""}</span><a href="#${tab}" data-go="${tab}">${l}</a></li>`).join("");
+  $("steps").querySelectorAll("[data-go]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.go)});
+  const alerts=[];
+  if(!r.checklist.plano)alerts.push(`Sua atendente não responde no WhatsApp sem um plano ativo. <a href="#assinatura" data-go="assinatura">Assinar agora</a>`);
+  else if(r.diasRestantes<=5)alerts.push(`Seu plano vence em ${r.diasRestantes} dia(s). <a href="#assinatura" data-go="assinatura">Renovar</a>`);
+  if(r.limite&&s.mes>=r.limite)alerts.push(`Você atingiu o limite de conversas do plano: as novas conversas estão indo para a equipe. <a href="#assinatura" data-go="assinatura">Mudar de plano</a>`);
+  if(r.pausado)alerts.push(`A atendente está pausada. <a href="#atendente" data-go="atendente">Reativar</a>`);
+  if(s.aguardando_humano)alerts.push(`${s.aguardando_humano} conversa(s) esperando alguém da equipe. <a href="#conversas" data-go="conversas">Ver conversas</a>`);
+  $("alertBox").hidden=!alerts.length;$("alertBox").innerHTML=alerts.join("<br>");
+  $("alertBox").querySelectorAll("[data-go]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.go)});
+  updatePending(s.aguardando_humano);
+}
+function updatePending(n){
+  $("pendingBadge").hidden=!n;$("pendingBadge").textContent=n;
+  document.title=(n?`(${n}) `:"")+"Painel — Inteligência ARR";
+  if(lastPending!==null&&n>lastPending&&"Notification" in window&&Notification.permission==="granted")
+    new Notification("Cliente esperando atendimento",{body:"Uma conversa foi transferida para a equipe."});
+  lastPending=n;
+}
+// Atualiza alertas e a caixa de entrada sozinho
+setInterval(async()=>{
+  try{const r=await api("/api/resumo");updatePending(r.stats.aguardando_humano);
+    if($("conversas").classList.contains("active")){await loadConvs();if(selConv&&document.activeElement!==$("humanText"))openConv(selConv,true)}}catch{}
+},20000);
 
 // ---- assinatura ----
 async function loadMe(){
@@ -164,7 +228,7 @@ async function loadMe(){
 }
 async function subscribe(plan,btn){
   btn.disabled=true;
-  try{const d=await api("/api/assinar",{method:"POST",body:{plan}});if(d.checkoutUrl)location.href=d.checkoutUrl;else{await loadMe();alert("Plano ativado!");}}
+  try{const d=await api("/api/assinar",{method:"POST",body:{plan}});if(d.checkoutUrl)location.href=d.checkoutUrl;else{await loadMe();loadResumo();alert("Plano ativado!");}}
   catch(e){alert(e.message)}finally{btn.disabled=false}
 }
 
@@ -211,7 +275,7 @@ function collect(){
 }
 $("cfg").onsubmit=async e=>{
   e.preventDefault();collect();$("save").disabled=true;$("saveMsg").textContent="";
-  try{await api("/api/bot",{method:"PUT",body:{settings:state.settings,whatsapp:state.whatsappDraft,integrations:state.integrations}});$("saveMsg").innerHTML='<span class="ok">Salvo!</span>';await loadBot();}
+  try{await api("/api/bot",{method:"PUT",body:{settings:state.settings,whatsapp:state.whatsappDraft,integrations:state.integrations}});$("saveMsg").innerHTML='<span class="ok">Salvo!</span>';await loadBot();loadResumo();}
   catch(err){$("saveMsg").innerHTML=`<span class="error">${esc(err.message)}</span>`}
   finally{$("save").disabled=false}
 };
@@ -236,12 +300,15 @@ async function loadConvs(){
   $("convList").innerHTML=conversations.length?conversations.map(c=>`<div class="conv-item ${c.id===selConv?"sel":""}" data-id="${c.id}"><strong>${esc(c.customer_name||"+"+c.customer_phone)}</strong> ${c.status==="humano"?'<span class="status human">Humano</span>':""}<div class="hint">${new Date(c.last_activity*1000).toLocaleString("pt-BR")}${c.handoff_reason?" · "+esc(c.handoff_reason):""}</div></div>`).join(""):'<p class="hint" style="padding:14px">Nenhuma conversa ainda.</p>';
   $("convList").querySelectorAll(".conv-item").forEach(el=>el.onclick=()=>openConv(Number(el.dataset.id)));
 }
-async function openConv(id){
+async function openConv(id,silent){
   selConv=id;const {conversation,lines}=await api("/api/conversas/"+id);
   const c=$("convChat");c.innerHTML="";
+  if(conversation.status==="humano")bubble(c,"Em atendimento humano"+(conversation.handoff_reason?": "+conversation.handoff_reason:"")+". A IA não responde até você devolver.","sys");
   for(const l of lines)bubble(c,l.text,{cliente:"in",bot:"out",humano:"human",sistema:"sys"}[l.from]);
-  $("convActions").hidden=false;$("giveBack").hidden=conversation.status!=="humano";loadConvs();
+  $("convActions").hidden=false;$("giveBack").hidden=conversation.status!=="humano";if(!silent)loadConvs();
+  if("Notification" in window&&Notification.permission==="default")Notification.requestPermission();
 }
+$("humanText").onkeydown=e=>{if(e.key==="Enter")$("humanSend").click()};
 $("humanSend").onclick=async()=>{const t=$("humanText").value.trim();if(!t||!selConv)return;
   try{await api(`/api/conversas/${selConv}/responder`,{method:"POST",body:{texto:t}});$("humanText").value="";openConv(selConv)}catch(e){alert(e.message)}};
 $("giveBack").onclick=async()=>{await api(`/api/conversas/${selConv}/devolver`,{method:"POST"});openConv(selConv)};
@@ -249,10 +316,12 @@ $("giveBack").onclick=async()=>{await api(`/api/conversas/${selConv}/devolver`,{
 $("logout").onclick=async()=>{await api("/api/logout",{method:"POST"});location.href="/"};
 
 (async()=>{
-  await Promise.all([loadMe(),loadBot()]);
+  const me=await api("/api/me");$("hello").textContent=`Olá, ${me.user.name.split(" ")[0]}!`;
+  await Promise.all([loadMe(),loadBot(),loadResumo()]);
+  const h=location.hash.slice(1);if(h&&$(h)?.classList.contains("panel"))go(h);
   const qs=new URLSearchParams(location.search);
   if(qs.get("pagamento")==="ok")alert("Pagamento recebido! Assim que o Mercado Pago confirmar, seu plano é ativado.");
-  const p=qs.get("plano");if(p){const b=document.querySelector(`[data-plan="${CSS.escape(p)}"]`);if(b)b.scrollIntoView()}
+  const p=qs.get("plano");if(p){go("assinatura");const b=document.querySelector(`[data-plan="${CSS.escape(p)}"]`);if(b)b.closest(".plan").classList.add("featured")}
 })();
 </script>
 </body>
