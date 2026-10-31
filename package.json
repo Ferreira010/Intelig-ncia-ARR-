@@ -1,0 +1,17 @@
+{
+  "name": "inteligencia-arr",
+  "version": "1.0.0",
+  "description": "Plataforma SaaS de atendimento humanizado via WhatsApp com IA (Claude), integrações de estoque e transportadora.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/server.js"
+  },
+  "engines": { "node": ">=22.13" },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "express": "^4.21.2"
+  }
+}

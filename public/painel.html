@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel — Inteligência ARR</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="/"><span>AR</span>Inteligência ARR</a>
+  <div style="display:flex;gap:10px;align-items:center"><span id="planBadge"></span><button class="btn ghost small" id="logout">Sair</button></div>
+</div></header>
+
+<div class="wrap layout">
+  <nav class="side" id="nav">
+    <button data-tab="assinatura" class="active">Assinatura</button>
+    <button data-tab="negocio">Meu negócio</button>
+    <button data-tab="atendente">Atendente e dicas</button>
+    <button data-tab="integracoes">Integrações (APIs)</button>
+    <button data-tab="whatsapp">WhatsApp</button>
+    <button data-tab="testar">Testar conversa</button>
+    <button data-tab="conversas">Conversas</button>
+  </nav>
+
+  <main>
+    <!-- ASSINATURA -->
+    <div class="panel active" id="assinatura">
+      <h2>Assinatura</h2>
+      <p class="sub" id="planInfo"></p>
+      <div class="grid" id="plans"></div>
+      <p class="hint" id="testModeHint" hidden>Modo de teste: o Mercado Pago não está configurado no servidor, então o plano é ativado sem cobrança.</p>
+    </div>
+
+    <form id="cfg">
+    <!-- NEGÓCIO -->
+    <div class="panel" id="negocio">
+      <h2>Meu negócio</h2>
+      <p class="sub">Tudo o que a atendente precisa saber sobre a sua loja. Quanto mais detalhe, melhor ela atende.</p>
+      <div class="row">
+        <div><label>Nome da loja</label><input name="negocio.nome" placeholder="Ex.: Loja Passo Certo"></div>
+        <div><label>Segmento</label><input name="negocio.segmento" placeholder="Ex.: calçados esportivos"></div>
+      </div>
+      <div class="row">
+        <div><label>Site / link da loja</label><input name="negocio.site" placeholder="https://"></div>
+        <div><label>Horário do atendimento humano</label><input name="negocio.horario" placeholder="Seg a sex, 9h às 18h"></div>
+      </div>
+      <label>Sobre a loja</label><textarea name="negocio.descricao" placeholder="Quem vocês são, diferenciais, onde ficam, formas de compra…"></textarea>
+      <label>O que você vende (produtos e preços)
+        <div class="hint">Se você conectar a API de estoque, ela consulta preço e disponibilidade em tempo real. Aqui vale colocar as linhas de produto, faixas de preço, tabela de medidas…</div></label>
+      <textarea name="catalogo" style="min-height:160px" placeholder="Tênis Runner — R$ 299 — tamanhos 34 a 44 — cores azul, preto e branco&#10;Meia esportiva kit 3 — R$ 39,90"></textarea>
+      <label>Políticas (troca, devolução, pagamento, frete, garantia)</label>
+      <textarea name="negocio.politicas" placeholder="Troca grátis em até 30 dias. Pix com 5% de desconto. Frete grátis acima de R$ 250…"></textarea>
+      <label>Perguntas frequentes</label>
+      <textarea name="faq" placeholder="P: Vocês têm loja física? R: Sim, na Rua X, 123…"></textarea>
+    </div>
+
+    <!-- ATENDENTE -->
+    <div class="panel" id="atendente">
+      <h2>Atendente e dicas</h2>
+      <p class="sub">Defina a personalidade e ensine como você ensinaria um funcionário novo.</p>
+      <div class="row">
+        <div><label>Nome da atendente</label><input name="persona.nome" placeholder="Ana"></div>
+        <div><label>Emojis</label><select name="persona.emojis"><option value="pouco">Poucos</option><option value="moderado">Moderado</option><option value="nenhum">Nenhum</option></select></div>
+      </div>
+      <label>Jeito de falar</label><input name="persona.estilo" placeholder="Ex.: descontraída, fala como amiga, chama de 'você', sem gírias pesadas">
+      <label>Dicas para o bot
+        <div class="hint">Regras de ouro, argumentos de venda, o que oferecer junto, o que nunca falar, como lidar com desconto…</div></label>
+      <textarea name="dicas" style="min-height:200px" placeholder="- Sempre ofereça a meia junto quando o cliente comprar tênis&#10;- Se pedirem desconto, pode dar até 5% no Pix, nunca mais que isso&#10;- Nunca fale mal da concorrência&#10;- Clientes que perguntam sobre corrida: recomende o Runner Pro"></textarea>
+      <label class="toggle"><input type="checkbox" name="pausado"> Pausar a atendente (ela para de responder no WhatsApp)</label>
+    </div>
+
+    <!-- INTEGRAÇÕES -->
+    <div class="panel" id="integracoes">
+      <h2>Integrações (APIs)</h2>
+      <p class="sub">Conecte os sistemas da sua loja. Use variáveis entre chaves duplas na URL ou no corpo — a atendente preenche com o que o cliente falou.</p>
+      <div id="integs"></div>
+    </div>
+
+    <!-- WHATSAPP -->
+    <div class="panel" id="whatsapp">
+      <h2>WhatsApp</h2>
+      <p class="sub">Use a API oficial do WhatsApp Business (Meta Cloud API).</p>
+      <div class="card" style="margin-bottom:16px">
+        <strong>Passo a passo</strong>
+        <ol style="color:var(--muted);margin:8px 0 0;padding-left:20px">
+          <li>Em <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com</a>, crie um app do tipo "Empresa" e adicione o produto WhatsApp.</li>
+          <li>Copie o <b>ID do número de telefone</b> e gere um <b>token de acesso permanente</b> (usuário do sistema no Gerenciador de Negócios).</li>
+          <li>Em WhatsApp → Configuração → Webhook, cole a URL e o token de verificação abaixo e assine o campo <code>messages</code>.</li>
+        </ol>
+      </div>
+      <label>URL do webhook (cole na Meta)</label><input id="webhookUrl" readonly>
+      <label>Token de verificação (cole na Meta)</label><input name="wa.verifyToken" placeholder="Gerado automaticamente ao salvar">
+      <label>ID do número de telefone</label><input name="wa.phoneId" placeholder="Ex.: 123456789012345">
+      <label>Token de acesso</label><input name="wa.token" type="password" placeholder="EAAG…" autocomplete="off">
+      <label>Chave secreta do app (opcional, recomendado)<div class="hint">Em Configurações do app → Básico. Usamos para garantir que as mensagens vêm mesmo da Meta.</div></label>
+      <input name="wa.appSecret" type="password" autocomplete="off">
+    </div>
+
+    <div class="savebar" id="savebar" hidden><button class="btn" id="save">Salvar alterações</button><span id="saveMsg"></span></div>
+    </form>
+
+    <!-- TESTAR -->
+    <div class="panel" id="testar">
+      <h2>Testar conversa</h2>
+      <p class="sub">Converse com sua atendente como se fosse um cliente. Salve as configurações antes de testar.</p>
+      <div class="chat" id="chat"></div>
+      <div class="chat-input"><input id="chatText" placeholder="Escreva como um cliente escreveria…"><button class="btn" id="chatSend">Enviar</button><button class="btn ghost" id="chatReset" title="Começar de novo">Limpar</button></div>
+      <div class="error" id="chatErr"></div>
+    </div>
+
+    <!-- CONVERSAS -->
+    <div class="panel" id="conversas">
+      <h2>Conversas</h2>
+      <p class="sub">Acompanhe o que a atendente está falando e assuma quando quiser.</p>
+      <div class="inbox">
+        <div class="card conv-list" style="padding:0" id="convList"></div>
+        <div>
+          <div class="chat" id="convChat"><div class="msg sys">Selecione uma conversa</div></div>
+          <div id="convActions" hidden>
+            <div class="chat-input"><input id="humanText" placeholder="Responder como atendente humano…"><button class="btn" id="humanSend">Enviar</button></div>
+            <button class="btn ghost small" style="margin-top:8px" id="giveBack">Devolver para a atendente IA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const api=async(url,opts={})=>{
+  const r=await fetch(url,{...opts,headers:{"Content-Type":"application/json"},body:opts.body?JSON.stringify(opts.body):undefined});
+  if(r.status===401){location.href="/entrar.html";throw new Error("login");}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||"Erro "+r.status);
+  return d;
+};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const INTEGS={
+  estoque:{title:"Estoque",vars:["busca"],ex:"https://api.seusistema.com.br/produtos?q={{busca}}",help:"Ex.: Bling, Tiny, Nuvemshop, WooCommerce, Shopify ou uma API própria. A atendente usa para ver disponibilidade, tamanhos e preço."},
+  rastreio:{title:"Transportadora — rastreio",vars:["codigo"],ex:"https://api.transportadora.com.br/rastreio/{{codigo}}",help:"Ex.: Melhor Envio (POST https://melhorenvio.com.br/api/v2/me/shipment/tracking com corpo {\"orders\":[\"{{codigo}}\"]}), Correios, Jadlog, Frenet."},
+  frete:{title:"Transportadora — cotação de frete",vars:["cep","produto"],ex:"https://api.transportadora.com.br/frete?cep={{cep}}",help:"Para a atendente calcular valor e prazo de entrega para o CEP do cliente."},
+  pedidos:{title:"Pedidos",vars:["numero"],ex:"https://api.seusistema.com.br/pedidos/{{numero}}",help:"Status do pagamento, itens e código de rastreio de um pedido."},
+};
+
+let state=null;
+// ---- abas ----
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.tab));
+  $("savebar").hidden=!["negocio","atendente","integracoes","whatsapp"].includes(b.dataset.tab);
+  if(b.dataset.tab==="conversas")loadConvs();
+});
+
+// ---- assinatura ----
+async function loadMe(){
+  const [{user},{plans,testMode}]=await Promise.all([api("/api/me"),api("/api/planos")]);
+  $("planBadge").innerHTML=user.active?`<span class="status on">Plano ${esc(plans[user.plan]?.name||user.plan)} ativo</span>`:`<span class="status off">Sem plano ativo</span>`;
+  $("planInfo").textContent=user.active?`Seu plano vale até ${new Date(user.planActiveUntil*1000).toLocaleDateString("pt-BR")}. Você pode renovar a qualquer momento (os dias se somam).`:`Olá, ${user.name}! Escolha um plano para colocar sua atendente no WhatsApp.`;
+  $("testModeHint").hidden=!testMode;
+  $("plans").innerHTML=Object.entries(plans).map(([k,p])=>`<div class="card plan"><h3>${esc(p.name)}</h3><div class="price">R$ ${p.price}<small>/mês</small></div><p>${esc(p.description)}</p><button class="btn" style="width:100%;margin-top:16px" data-plan="${k}">${user.active&&user.plan===k?"Renovar":"Assinar"}</button></div>`).join("");
+  $("plans").querySelectorAll("button").forEach(b=>b.onclick=()=>subscribe(b.dataset.plan,b));
+}
+async function subscribe(plan,btn){
+  btn.disabled=true;
+  try{const d=await api("/api/assinar",{method:"POST",body:{plan}});if(d.checkoutUrl)location.href=d.checkoutUrl;else{await loadMe();alert("Plano ativado!");}}
+  catch(e){alert(e.message)}finally{btn.disabled=false}
+}
+
+// ---- configuração ----
+function get(obj,path){return path.split(".").reduce((o,k)=>o?.[k],obj)}
+function set(obj,path,v){const ks=path.split(".");let o=obj;ks.slice(0,-1).forEach(k=>o=o[k]??={});o[ks.at(-1)]=v}
+function renderIntegs(){
+  $("integs").innerHTML=Object.entries(INTEGS).map(([k,d])=>{
+    const i=state.integrations[k];
+    return `<details class="card integ" ${i.enabled?"open":""}><summary>${d.title} <span class="status ${i.enabled?"on":"off"}">${i.enabled?"Ligada":"Desligada"}</span></summary>
+      <p class="hint">${esc(d.help)} Variáveis: ${d.vars.map(v=>`<code>{{${v}}}</code>`).join(" ")}</p>
+      <label class="toggle"><input type="checkbox" data-i="${k}.enabled" ${i.enabled?"checked":""}> Ativar esta integração</label>
+      <div class="row" style="grid-template-columns:120px 1fr"><div><label>Método</label><select data-i="${k}.method"><option ${i.method==="GET"?"selected":""}>GET</option><option ${i.method==="POST"?"selected":""}>POST</option></select></div>
+      <div><label>URL</label><input data-i="${k}.url" value="${esc(i.url)}" placeholder="${esc(d.ex)}"></div></div>
+      <label>Headers (JSON)<div class="hint">Onde vai o token da API. Ex.: {"Authorization": "Bearer SEU_TOKEN"}</div></label><input data-i="${k}.headers" value="${esc(i.headers)}" placeholder='{"Authorization": "Bearer ..."}'>
+      <label>Corpo (só para POST)</label><textarea data-i="${k}.body" style="min-height:70px" placeholder='{"codigo": "{{${d.vars[0]}}}"}'>${esc(i.body)}</textarea>
+      <label>Observação para a atendente<div class="hint">Ajuda a IA a entender a resposta. Ex.: "o campo saldo é a quantidade disponível; status 'em_transito' significa a caminho".</div></label><input data-i="${k}.instrucoes" value="${esc(i.instrucoes)}">
+      <div style="display:flex;gap:8px;align-items:end;margin-top:12px;flex-wrap:wrap">${d.vars.map(v=>`<div style="flex:1;min-width:140px"><label>Teste: ${v}</label><input data-test="${k}.${v}"></div>`).join("")}<button type="button" class="btn ghost" data-testbtn="${k}">Testar API</button></div>
+      <pre class="out" id="out-${k}" hidden></pre></details>`}).join("");
+  $("integs").querySelectorAll("[data-testbtn]").forEach(b=>b.onclick=async()=>{
+    const k=b.dataset.testbtn;collect();const vars={};
+    $("integs").querySelectorAll(`[data-test^="${k}."]`).forEach(i=>vars[i.dataset.test.split(".")[1]]=i.value);
+    const out=$("out-"+k);out.hidden=false;out.textContent="Consultando…";
+    const r=await api("/api/bot/testar-integracao",{method:"POST",body:{key:k,integration:state.integrations[k],vars}});
+    out.textContent=`HTTP ${r.status}\n${r.body}`;
+  });
+}
+async function loadBot(){
+  state=await api("/api/bot");
+  const f=$("cfg");
+  f.querySelectorAll("[name]").forEach(el=>{
+    const n=el.name;const v=n.startsWith("wa.")?state.whatsapp[n.slice(3)]:get(state.settings,n);
+    if(el.type==="checkbox")el.checked=!!v;else if(v!==undefined)el.value=v;
+  });
+  $("webhookUrl").value=state.webhookUrl;
+  renderIntegs();
+}
+function collect(){
+  const f=$("cfg");const settings={...state.settings};const whatsapp={};
+  f.querySelectorAll("[name]").forEach(el=>{const v=el.type==="checkbox"?el.checked:el.value;
+    if(el.name.startsWith("wa."))whatsapp[el.name.slice(3)]=v;else set(settings,el.name,v)});
+  f.querySelectorAll("[data-i]").forEach(el=>{const [k,field]=el.dataset.i.split(".");state.integrations[k][field]=el.type==="checkbox"?el.checked:el.value});
+  state.settings=settings;state.whatsappDraft=whatsapp;
+}
+$("cfg").onsubmit=async e=>{
+  e.preventDefault();collect();$("save").disabled=true;$("saveMsg").textContent="";
+  try{await api("/api/bot",{method:"PUT",body:{settings:state.settings,whatsapp:state.whatsappDraft,integrations:state.integrations}});$("saveMsg").innerHTML='<span class="ok">Salvo!</span>';await loadBot();}
+  catch(err){$("saveMsg").innerHTML=`<span class="error">${esc(err.message)}</span>`}
+  finally{$("save").disabled=false}
+};
+
+// ---- simulador ----
+function bubble(el,text,cls){const d=document.createElement("div");d.className="msg "+cls;d.textContent=text;el.appendChild(d);el.scrollTop=el.scrollHeight;return d}
+async function sendSim(){
+  const t=$("chatText").value.trim();if(!t)return;$("chatText").value="";$("chatErr").textContent="";
+  bubble($("chat"),t,"out");const typing=bubble($("chat"),"digitando…","sys");$("chatSend").disabled=true;
+  try{const r=await api("/api/bot/simular",{method:"POST",body:{texto:t}});typing.remove();
+    for(const b of r.bubbles){await new Promise(s=>setTimeout(s,500));bubble($("chat"),b,"in")}
+    if(r.handoff)bubble($("chat"),"Conversa transferida para atendimento humano: "+r.handoff,"sys");}
+  catch(e){typing.remove();$("chatErr").textContent=e.message}finally{$("chatSend").disabled=false;$("chatText").focus()}
+}
+$("chatSend").onclick=sendSim;$("chatText").onkeydown=e=>{if(e.key==="Enter")sendSim()};
+$("chatReset").onclick=async()=>{await api("/api/bot/simular",{method:"POST",body:{reset:true}});$("chat").innerHTML=""};
+
+// ---- conversas ----
+let selConv=null;
+async function loadConvs(){
+  const {conversations}=await api("/api/conversas");
+  $("convList").innerHTML=conversations.length?conversations.map(c=>`<div class="conv-item ${c.id===selConv?"sel":""}" data-id="${c.id}"><strong>${esc(c.customer_name||"+"+c.customer_phone)}</strong> ${c.status==="humano"?'<span class="status human">Humano</span>':""}<div class="hint">${new Date(c.last_activity*1000).toLocaleString("pt-BR")}${c.handoff_reason?" · "+esc(c.handoff_reason):""}</div></div>`).join(""):'<p class="hint" style="padding:14px">Nenhuma conversa ainda.</p>';
+  $("convList").querySelectorAll(".conv-item").forEach(el=>el.onclick=()=>openConv(Number(el.dataset.id)));
+}
+async function openConv(id){
+  selConv=id;const {conversation,lines}=await api("/api/conversas/"+id);
+  const c=$("convChat");c.innerHTML="";
+  for(const l of lines)bubble(c,l.text,{cliente:"in",bot:"out",humano:"human",sistema:"sys"}[l.from]);
+  $("convActions").hidden=false;$("giveBack").hidden=conversation.status!=="humano";loadConvs();
+}
+$("humanSend").onclick=async()=>{const t=$("humanText").value.trim();if(!t||!selConv)return;
+  try{await api(`/api/conversas/${selConv}/responder`,{method:"POST",body:{texto:t}});$("humanText").value="";openConv(selConv)}catch(e){alert(e.message)}};
+$("giveBack").onclick=async()=>{await api(`/api/conversas/${selConv}/devolver`,{method:"POST"});openConv(selConv)};
+
+$("logout").onclick=async()=>{await api("/api/logout",{method:"POST"});location.href="/"};
+
+(async()=>{
+  await Promise.all([loadMe(),loadBot()]);
+  const qs=new URLSearchParams(location.search);
+  if(qs.get("pagamento")==="ok")alert("Pagamento recebido! Assim que o Mercado Pago confirmar, seu plano é ativado.");
+  const p=qs.get("plano");if(p){const b=document.querySelector(`[data-plan="${CSS.escape(p)}"]`);if(b)b.scrollIntoView()}
+})();
+</script>
+</body>
+</html>

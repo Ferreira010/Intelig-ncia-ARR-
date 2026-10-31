@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar — Inteligência ARR</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="/"><span>AR</span>Inteligência ARR</a></div></header>
+<div class="auth">
+  <div class="card">
+    <h2 id="title" style="margin-top:0">Entrar</h2>
+    <form id="form">
+      <div id="nameField" hidden><label for="name">Seu nome</label><input id="name" autocomplete="name"></div>
+      <label for="email">E-mail</label><input id="email" type="email" required autocomplete="email">
+      <label for="password">Senha</label><input id="password" type="password" required minlength="8" autocomplete="current-password">
+      <div class="error" id="err"></div>
+      <button class="btn" style="width:100%;margin-top:8px" id="submit">Entrar</button>
+    </form>
+    <p style="text-align:center;margin-bottom:0"><a href="#" id="switch">Ainda não tenho conta</a></p>
+  </div>
+</div>
+<script>
+const qs=new URLSearchParams(location.search);
+let signup=qs.has("cadastro");
+const $=id=>document.getElementById(id);
+function render(){
+  $("title").textContent=signup?"Criar conta":"Entrar";
+  $("submit").textContent=signup?"Criar conta":"Entrar";
+  $("nameField").hidden=!signup;$("name").required=signup;
+  $("password").autocomplete=signup?"new-password":"current-password";
+  $("switch").textContent=signup?"Já tenho conta":"Ainda não tenho conta";
+}
+render();
+$("switch").onclick=e=>{e.preventDefault();signup=!signup;render();};
+$("form").onsubmit=async e=>{
+  e.preventDefault();$("err").textContent="";$("submit").disabled=true;
+  const body={email:$("email").value,password:$("password").value,name:$("name").value};
+  const r=await fetch(signup?"/api/cadastro":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json();$("submit").disabled=false;
+  if(!r.ok)return $("err").textContent=d.error;
+  location.href="/painel.html"+(qs.get("plano")?"?plano="+encodeURIComponent(qs.get("plano")):"");
+};
+</script>
+</body>
+</html>

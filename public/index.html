@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inteligência ARR — Atendimento no WhatsApp que parece gente</title>
+<meta name="description" content="Atendente de WhatsApp com IA que conversa como uma pessoa, consulta seu estoque e rastreia pedidos na transportadora.">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="/"><span>AR</span>Inteligência ARR</a>
+  <div><a class="btn ghost small" href="/entrar.html">Entrar</a> <a class="btn small" href="/entrar.html?cadastro=1">Começar agora</a></div>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <div class="badge">Atendimento 24h no WhatsApp</div>
+      <h1>Seu cliente vai achar que está falando com o melhor vendedor da loja.</h1>
+      <p class="lead">Uma atendente com IA que conversa de forma natural, consulta seu estoque em tempo real, rastreia pedidos na transportadora, calcula frete e passa para um humano quando precisa.</p>
+      <a class="btn" href="/entrar.html?cadastro=1">Criar minha atendente</a>
+      <a class="btn ghost" href="#planos">Ver planos</a>
+    </div>
+    <div class="phone" aria-label="Exemplo de conversa">
+      <div class="msg in">oi, vcs tem o tênis runner azul no 42?</div>
+      <div class="msg in">preciso pra sexta</div>
+      <div class="msg out">Oi, Marcos! Tenho sim, o Runner azul no 42 tá com 3 pares aqui 😊</div>
+      <div class="msg out">Me passa seu CEP que eu vejo se chega até sexta?</div>
+      <div class="msg in">01310-100</div>
+      <div class="msg out">Pra esse CEP sai R$ 18,90 pelo expresso e chega quinta. Quer que eu te mande o link pra fechar?</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Não é um robô de menu</h2>
+    <p class="sub">Nada de "digite 1 para…". A conversa flui como com uma pessoa de verdade.</p>
+    <div class="grid">
+      <div class="card"><h3>Conversa natural</h3><p>Mensagens curtas, no tom da sua marca, espera o cliente terminar de digitar, mostra "digitando…" e responde em bolhas, como gente.</p></div>
+      <div class="card"><h3>Estoque em tempo real</h3><p>Conecte a API do seu sistema (Bling, Tiny, planilha, ERP próprio). Ela nunca promete o que não tem.</p></div>
+      <div class="card"><h3>Transportadora integrada</h3><p>Rastreio e cotação de frete pela API da sua transportadora (Melhor Envio, Correios, Jadlog, Frenet e outras).</p></div>
+      <div class="card"><h3>Memória do cliente</h3><p>Lembra o nome, o tamanho que a pessoa usa e o pedido em andamento na próxima conversa.</p></div>
+      <div class="card"><h3>Você ensina, ela aprende</h3><p>Escreva dicas como faria com um funcionário novo: "sempre ofereça a meia junto com o tênis".</p></div>
+      <div class="card"><h3>Humano quando precisa</h3><p>Reclamação séria ou pedido especial? Ela passa para sua equipe, que responde pelo painel.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Como funciona</h2>
+    <p class="sub">Em menos de uma hora sua atendente está no ar.</p>
+    <div class="grid">
+      <div class="card"><h3>1. Assine</h3><p>Escolha o plano e pague com Pix, cartão ou boleto.</p></div>
+      <div class="card"><h3>2. Conte sobre o negócio</h3><p>O que você vende, preços, políticas de troca e as dicas para a atendente.</p></div>
+      <div class="card"><h3>3. Conecte as APIs</h3><p>Estoque, transportadora e pedidos — basta colar a URL e o token.</p></div>
+      <div class="card"><h3>4. Ligue o WhatsApp</h3><p>Conecte seu número da API oficial do WhatsApp Business e pronto.</p></div>
+    </div>
+  </section>
+
+  <section id="planos">
+    <h2>Planos</h2>
+    <p class="sub">Sem fidelidade. Cancele quando quiser.</p>
+    <div class="grid" id="plans"></div>
+  </section>
+</main>
+<footer><div class="wrap">© Inteligência ARR · Atendimento inteligente para WhatsApp</div></footer>
+<script>
+fetch("/api/planos").then(r=>r.json()).then(({plans})=>{
+  const el=document.getElementById("plans");
+  el.innerHTML=Object.entries(plans).map(([k,p],i)=>`
+    <div class="card plan ${i===1?"featured":""}">
+      ${i===1?'<div class="badge">Mais escolhido</div>':""}
+      <h3>${p.name}</h3>
+      <div class="price">R$ ${p.price}<small>/mês</small></div>
+      <ul><li>${p.description}</li><li>Integração com estoque e transportadora</li><li>Painel de conversas e atendimento humano</li></ul>
+      <a class="btn" style="width:100%" href="/entrar.html?cadastro=1&plano=${k}">Assinar ${p.name}</a>
+    </div>`).join("");
+});
+</script>
+</body>
+</html>
