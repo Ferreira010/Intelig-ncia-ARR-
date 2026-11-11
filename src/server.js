@@ -169,6 +169,18 @@ app.get("/api/resumo", requireAuth, (req, res) => {
 });
 
 // ---------------- conversas (caixa de entrada) ----------------
+// Descreve em português o que a atendente fez nos bastidores
+function describeTool(name, i) {
+  return ({
+    consultar_estoque: () => `🔎 Consultou o estoque: ${i.busca}`,
+    cotar_frete: () => `🚚 Calculou o frete para o CEP ${i.cep}${i.produto ? ` (${i.produto})` : ""}`,
+    rastrear_pedido: () => `📦 Rastreou a encomenda ${i.codigo}`,
+    consultar_pedido: () => `🧾 Consultou o pedido ${i.numero}`,
+    transferir_para_humano: () => `🙋 Chamou a equipe: ${i.motivo}`,
+    salvar_nota_cliente: () => `📝 Anotou sobre o cliente: ${i.nota}`,
+  })[name]?.() || `Usou ${name}`;
+}
+
 function ownConversation(req) {
   const bot = bots.byUser(req.user.id);
   const conv = conversations.byId(Number(req.params.id));
@@ -190,8 +202,8 @@ app.get("/api/conversas/:id", requireAuth, (req, res) => {
         if (human) for (const l of human[1].split("\n")) lines.push({ from: l.startsWith("Cliente:") ? "cliente" : "humano", text: l.replace(/^(Cliente|Atendente): /, "") });
         lines.push({ from: "cliente", text: b.text.replace(/^(\[[\s\S]*?\]\n)+/, "").trim() });
       }
-      else if (b.type === "text") lines.push({ from: "bot", text: b.text.replace(/\s*\|\|\|\s*/g, "\n") });
-      else if (b.type === "tool_use") lines.push({ from: "sistema", text: `consultou ${b.name}: ${JSON.stringify(b.input)}` });
+      else if (b.type === "text") for (const part of b.text.split(/\s*\|\|\|\s*/)) { if (part.trim()) lines.push({ from: "bot", text: part.trim() }); }
+      else if (b.type === "tool_use") lines.push({ from: "sistema", text: describeTool(b.name, b.input || {}) });
       else if (b.type === "image" || b.type === "document") lines.push({ from: "sistema", text: b.type === "image" ? "📷 cliente enviou uma foto (a atendente viu)" : "📄 cliente enviou um PDF (a atendente leu)" });
     }
   }

@@ -47,7 +47,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--brand);border-co
 .error{color:var(--danger);font-size:.9rem;min-height:1.2em;margin-top:10px}
 .ok{color:var(--brand);font-size:.9rem}
 /* painel */
-.layout{display:grid;grid-template-columns:230px 1fr;gap:24px;padding:24px 0 60px}
+.layout{display:grid;grid-template-columns:230px 1fr;gap:24px;padding:24px 16px 60px}
 nav.side{display:flex;flex-direction:column;gap:4px;position:sticky;top:88px;align-self:start}
 nav.side button{text-align:left;background:none;border:0;padding:10px 12px;border-radius:10px;font:inherit;color:var(--text);cursor:pointer}
 nav.side button.active,nav.side button:hover{background:var(--brand-soft);color:var(--brand);font-weight:600}
@@ -101,3 +101,4 @@ code{background:var(--bg);border:1px solid var(--line);padding:1px 6px;border-ra
 .legal{max-width:760px;padding:40px 16px 64px}
 .legal h1{font-size:2rem;margin-bottom:4px}
 .legal h2{font-size:1.2rem;margin-top:28px}
+@media (max-width:560px){#planBadge .status.on{background:var(--brand)}#planBadge .status.off{background:var(--danger)}.logo{font-size:1rem}.logo span{width:26px;height:26px;font-size:.8rem}#planBadge .status{font-size:0;padding:0;width:12px;height:12px;border-radius:50%;vertical-align:middle}header.top .wrap{height:56px}}
